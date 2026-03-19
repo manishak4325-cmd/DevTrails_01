@@ -330,7 +330,7 @@ Isolation Forest	Anomaly detection	0-100 anomaly score
 DBSCAN	Fraud ring detection	Cluster density score
 XGBoost	Trust scoring	0-100 trust score
 
-## Decision Engine
+Decision Engine
 Fraud Confidence = (0.4 × Anomaly) + (0.4 × RingScore) + (0.2 × (100 - Trust))
 
 Score	Action	User Message
