@@ -365,21 +365,25 @@ Feedback loops adapt within 24h
 
  Fraud becomes economically irrational, not just technically difficult
 
-BUSINESS IMPACT
-Metric       	           Impact
-Fraud Reduction	      Near-complete elimination of low-effort fraud
-Ring Attacks	        Structurally prevented via zone payouts
-Manual Reviews	      ~80% reduction
-User Experience	      Instant payouts for trusted workers
-System Stability	    Liquidity protected under attack
+## Business Impact
 
-## All Edge Cases Covered
-Scenario	                            Problem	HyperNova Solution
-. Trapped in flood	              Can't move, GPS static	Emergency override + zone payout
-. Phone dead	                    No app activity	Last known location + prior work history
-. Evacuated	                    Left zone during disaster	Partial payout for time worked
-. Curfew stuck	                  Can't go home, can't work	Night premium + safety bonus
-. Smog at home	                  Didn't go to work	No payout (no work = no coverage)
+| Metric           | Impact                                        |
+| ---------------- | --------------------------------------------- |
+| Fraud Reduction  | Near-complete elimination of low-effort fraud |
+| Ring Attacks     | Structurally prevented via zone payouts       |
+| Manual Reviews   | ~80% reduction                                |
+| User Experience  | Instant payouts for trusted workers           |
+| System Stability | Liquidity protected under attack              |
+
+## Edge Cases Covered
+
+| Scenario         | Problem                   | HyperNova Solution                       |
+| ---------------- | ------------------------- | ---------------------------------------- |
+| Trapped in flood | Can't move, GPS static    | Emergency override + zone payout         |
+| Phone dead       | No app activity           | Last known location + prior work history |
+| Evacuated        | Left zone during disaster | Partial payout for time worked           |
+| Curfew stuck     | Can't go home, can't work | Night premium + safety bonus             |
+| Smog at home     | Didn't go to work         | No payout (no work = no coverage)        |
 
 ## Fraud Detection Flow
 
