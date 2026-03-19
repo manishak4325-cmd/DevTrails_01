@@ -3,8 +3,7 @@
 Guidewire DevTrails 2026 — Phase 1 Submission  
 Platform: Progressive Web App  
 Backend: Python | FastAPI  
-AI/ML: XGBoost | Scikit-learn | Isolation Forest  
-Status: Phase 1 Complete  
+AI/ML: XGBoost | Scikit-learn | Isolation Forest 
 
 ---
 
@@ -63,6 +62,8 @@ As a result:
 - Workers are forced to choose between safety and survival
 - There is no fallback or compensation mechanism
 
+![](https://github.com/manishak4325-cmd/DevTrails_01/blob/7e0a4bc654120de5f05a5f36d8d3ba9587a2526b/problemstatement.png)
+
 ---
 
 ## 3. Personas — Who We Protect
@@ -106,13 +107,48 @@ Priya represents workers impacted by safety constraints. She is unable to work d
 | Air Pollution | AQI > 400 | Unsafe to work |
 | Rain/Flood | Roads blocked | No deliveries |
 | Heat | > 45°C | Health risk |
-| Safety Risk | Night shifts | Unsafe |
-| Platform Issues | Downtime | Zero income |
-
-Key Insight:
-The problem is not reduced productivity — it is complete income loss during disruption periods.
+| Traffic Curfew / Restrictions | Police restrictions, VIP movement, emergency lockdowns | Forced idle time |
+| Safety Risk | Night shifts | Unsafe, especially for women |
+| Platform Issues | Downtime / forced logoff | Zero income |
 
 ---
+
+### Key Insight
+
+The problem is not reduced productivity — it is **forced inactivity**.
+
+Gig workers do not slow down during disruptions.  
+They are **forced to stop working completely** due to:
+
+- Government restrictions (curfews, traffic blocks)
+- Environmental hazards (AQI, heat, rain)
+- Safety risks (especially after dark)
+- Platform-level failures
+
+---
+
+### Why This Matters
+
+Unlike salaried employees:
+
+- No work = No pay  
+- No compensation during disruption  
+- No insurance coverage for income loss  
+
+---
+
+### Real Impact
+
+- Daily loss: ₹400–₹700  
+- Monthly loss: ₹3,000–₹6,000  
+- Annual loss: Up to 2–5 months of income  
+
+---
+
+### Core Problem Statement
+
+Gig workers face **zero-income risk during uncontrollable disruptions**,  
+with no system to compensate for forced inactivity.
 
 ## 5. Solution (Overview)
 
@@ -158,7 +194,12 @@ The system operates as a continuous loop:
 5. Expected income is calculated using historical patterns  
 6. Actual income is compared with expected income  
 7. Fraud detection layer validates authenticity  
-8. If valid, payout is triggered instantly  
+8. If valid, payout is triggered instantly
+
+### System Flow Diagram
+
+![image alt](https://github.com/manishak4325-cmd/DevTrails_01/blob/0503d9000b984c8ec5677af4b0984073f1176395/systemflow.png)
+
 
 ---
 
@@ -247,6 +288,10 @@ Defense layers include:
 Important:
 The system prioritizes minimizing false negatives (not rejecting genuine users).
 
+## Fraud Detection Flow
+
+![image alt](https://github.com/manishak4325-cmd/DevTrails_01/blob/c0af14d9645f9e7e90423ef5dc36407ad56aa714/frauddetectionflow.png)
+
 ---
 
 ## 13. System Architecture
@@ -263,6 +308,10 @@ Database stores user and transaction data
 
 External APIs provide real-time environmental inputs.
 
+### Architecture Diagram
+
+![image alt](https://github.com/manishak4325-cmd/DevTrails_01/blob/c0af14d9645f9e7e90423ef5dc36407ad56aa714/systemarchitecture.png)
+
 ---
 
 ## 14. Application Workflow
@@ -272,6 +321,9 @@ Onboarding → Risk Profiling → Subscription
 → Loss Calculation → Fraud Validation  
 → Instant Payout  
 
+### Application Workflow Diagram
+
+![image alt](https://github.com/manishak4325-cmd/DevTrails_01/blob/c0af14d9645f9e7e90423ef5dc36407ad56aa714/applicationworkflow.png)
 ---
 
 ## 15. Platform Choice (PWA)
