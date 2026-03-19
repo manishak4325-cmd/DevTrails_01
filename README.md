@@ -167,20 +167,19 @@ This removes friction, delays, and subjectivity from traditional insurance workf
 
 ## 6. Key Features
 
-### Rollback Protection
-When a worker logs off mid-day due to disruption, the system estimates the remaining expected earnings and compensates accordingly.
+| Feature                   | Description                                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------- |
+|  Parametric Auto-Payout | Automatic compensation triggered by verified disruptions — no claims or manual process.           |
+|  Hyper-Local Detection  | Detects disruptions (rain, AQI, curfew, outages) at **zone-level precision**.                     |
+|  Weekly Micro-Insurance | Flexible ₹50–₹80 weekly plans aligned with gig workers’ income cycle.                             |
+|  Instant Payout Engine   | UPI-based automated payouts processed within minutes.                                             |
+|  Rollback Protection   | Compensates workers for **remaining expected earnings** if they stop mid-shift due to disruption. |
+|  Premium Gifting        | Users can sponsor insurance for other workers, enabling a **community safety net**.               |
+|  Reward System          | Consistent activity and safe behavior reduce risk score → lower premiums.                         |
+|  SOS + Safety Mode      | Emergency trigger for unsafe situations, especially helpful for women workers.                    |
+|  Fraud Prevention       | Movement tracking, activity validation, and anomaly detection to prevent misuse.                  |
+|  AI Risk Prediction     | Predicts disruption probability for smarter pricing and early alerts.                             |
 
-### Premium Gifting
-Workers can sponsor coverage for others, enabling a community-driven safety net.
-
-### Reward System
-Consistent activity and safe behavior reduce risk scores, leading to lower premiums.
-
-### SOS + Safety Mode
-Allows users to manually trigger protection in unsafe situations. Especially important for women working late hours.
-
-### Instant Payout Engine
-Fully automated payout system integrated with UPI. No paperwork or manual approval required.
 
 ---
 
