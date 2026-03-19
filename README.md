@@ -21,7 +21,7 @@ AI/ML: XGBoost | Scikit-learn | Isolation Forest
 9. [Premium Model](#9-premium-model)  
 10. [Trigger System](#10-trigger-system)  
 11. [AI & ML Integration](#11-ai--ml-integration)  
-12. [Adversarial Defense & Fraud-Resistant Architecture](#12-adversarial-defense--fraud-resistant-architecture)  
+12. [Adversarial Defense & Anti-Spoofing Strategy](#12-adversarial-defense--anti-spoofing-strategy) 
 13. [System Architecture](#13-system-architecture)  
 14. [Application Workflow](#14-application-workflow)  
 15. [Platform Choice (PWA)](#15-platform-choice-pwa)  
