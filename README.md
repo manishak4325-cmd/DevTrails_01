@@ -278,7 +278,11 @@ We ask: "Why would anyone even try?"
 
 Our architecture combines pre-qualification barriers, economic disincentives, and parametric automation to make fraud not just detectable, but pointless.
 
-THE OFFENSIVE LAYER
+## Fraud Detection Flow
+
+![image alt](https://github.com/manishak4325-cmd/DevTrails_01/blob/c0af14d9645f9e7e90423ef5dc36407ad56aa714/frauddetectionflow.png)
+
+## THE OFFENSIVE LAYER
 1. Proof-of-Work Requirement
 Concept: Before payout, system verifies worker was actively working when disruption hit.
 
@@ -313,7 +317,7 @@ Zone Fraud Level	Payout Impact	Community Response
 >30%	Zone freeze (24h)	Unprofitable to attack
 👉 Genuine workers compensated via adjusted future premiums
 
-THE DETECTION ENGINE
+## THE DETECTION ENGINE
 Tier 1: Rule-Based Filters (Instant Kill)
 Rule	Threshold	Action
  Velocity	>80 km/h	Auto-Reject
@@ -326,7 +330,7 @@ Isolation Forest	Anomaly detection	0-100 anomaly score
 DBSCAN	Fraud ring detection	Cluster density score
 XGBoost	Trust scoring	0-100 trust score
 
-Decision Engine
+## Decision Engine
 Fraud Confidence = (0.4 × Anomaly) + (0.4 × RingScore) + (0.2 × (100 - Trust))
 
 Score	Action	User Message
@@ -335,7 +339,7 @@ Score	Action	User Message
 61-85	Challenge	Selfie / liveness check
 86-100	Reject	Soft rejection + support
 
-PARAMETRIC IDENTITY (Core Logic)
+## PARAMETRIC IDENTITY (Core Logic)
 Trigger Condition = TRUE (rainfall > threshold)
 AND
 Worker Eligibility = TRUE (Proof-of-Work / Zone presence)
@@ -385,9 +389,6 @@ Feedback loops adapt within 24h
 | Curfew stuck     | Can't go home, can't work | Night premium + safety bonus             |
 | Smog at home     | Didn't go to work         | No payout (no work = no coverage)        |
 
-## Fraud Detection Flow
-
-![image alt](https://github.com/manishak4325-cmd/DevTrails_01/blob/c0af14d9645f9e7e90423ef5dc36407ad56aa714/frauddetectionflow.png)
 
 ---
 
