@@ -1,4 +1,5 @@
-# HyperNova — AI-Powered Income Protection for Q-Commerce Workers
+# HyperNova — FluxShield
+Real-Time Income Protection for Gig Workers
 
 Guidewire DevTrails 2026 — Phase 1 Submission  
 Platform: Progressive Web App  
