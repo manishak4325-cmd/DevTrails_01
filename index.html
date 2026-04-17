@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <meta name="description" content="FluxShield — Location-based parametric insurance for delivery workers. AI-validated instant payouts.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0a0e1a">
+  <title>FluxShield — Smart Insurance for Delivery Workers</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header" id="appHeader">
+  <div class="header-brand" onclick="navigate('landing')">
+    <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="url(#g1)" stroke-width="2.5"/><path d="M16 8l6 12H10l6-12z" fill="url(#g1)"/><defs><linearGradient id="g1" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs></svg>
+    FluxShield
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" id="themeToggle" onclick="toggleTheme()">🌙</button>
+    <button class="btn-icon" id="notifBtn" onclick="toggleNotifications()" style="position:relative;display:none">🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span></button>
+  </div>
+</header>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-tab active" data-page="landing" onclick="navigate('landing')"><span class="tab-icon">🏠</span>Home</button>
+  <button class="nav-tab locked" data-page="risk-map" onclick="navigate('risk-map')"><span class="tab-icon">🗺️</span>Map</button>
+  <button class="nav-tab locked" data-page="claims" onclick="navigate('claims')"><span class="tab-icon">💳</span>Claims</button>
+  <button class="nav-tab locked" data-page="pricing" onclick="navigate('pricing')"><span class="tab-icon">📋</span>Plan</button>
+  <button class="nav-tab" data-page="auth" onclick="navigate('auth')"><span class="tab-icon">👤</span>Profile</button>
+</nav>
+
+<!-- NOTIFICATIONS -->
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-header"><h3>🔔 Notifications</h3><button class="btn-ghost btn-sm" onclick="toggleNotifications()">✕</button></div>
+  <div id="notifList"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- MANUAL CLAIM MODAL -->
+<div class="modal-overlay" id="manualClaimModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h3 style="font-size:1.1rem;font-weight:800;margin-bottom:4px;">📝 Raise Manual Claim</h3>
+    <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:16px;">Select a disruption type and submit for AI review</p>
+    <div class="claim-type-grid" id="claimTypeGrid">
+      <button class="claim-type-btn" data-type="rain" onclick="pickClaimType(this)"><div class="ct-icon">🌧️</div><div class="ct-label">Rain</div></button>
+      <button class="claim-type-btn" data-type="heat" onclick="pickClaimType(this)"><div class="ct-icon">🌡️</div><div class="ct-label">Heat</div></button>
+      <button class="claim-type-btn" data-type="aqi" onclick="pickClaimType(this)"><div class="ct-icon">🌫️</div><div class="ct-label">AQI</div></button>
+      <button class="claim-type-btn" data-type="flood" onclick="pickClaimType(this)"><div class="ct-icon">🌊</div><div class="ct-label">Flood</div></button>
+      <button class="claim-type-btn" data-type="storm" onclick="pickClaimType(this)"><div class="ct-icon">⚡</div><div class="ct-label">Storm</div></button>
+      <button class="claim-type-btn" data-type="traffic" onclick="pickClaimType(this)"><div class="ct-icon">🚧</div><div class="ct-label">Traffic</div></button>
+    </div>
+    <div class="form-group"><label>Time of Disruption</label><input type="time" class="form-input" id="claimTime" value=""></div>
+    <div class="form-group"><label>Additional Notes (optional)</label><input type="text" class="form-input" id="claimNotes" placeholder="Describe what happened..."></div>
+    <button class="btn btn-primary btn-block" onclick="submitManualClaim()" style="margin-top:8px;">Submit for AI Review</button>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('manualClaimModal')" style="margin-top:6px;">Cancel</button>
+  </div>
+</div>
+
+<!-- PROCESSING ANIMATION MODAL -->
+<div class="modal-overlay" id="processingModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h3 style="font-size:1.1rem;font-weight:800;margin-bottom:16px;">⚡ Processing Claim</h3>
+    
+    <div id="proc-step-1" class="processing-step">
+      <div class="proc-icon">📍</div>
+      <div class="proc-text"><div class="proc-title">Location Verified</div><div class="proc-desc">Checking if user is in affected zone...</div></div>
+    </div>
+    <div id="proc-step-2" class="processing-step">
+      <div class="proc-icon">🌦️</div>
+      <div class="proc-text"><div class="proc-title">Event Validation</div><div class="proc-desc">Verifying rain/heat/AQI data...</div></div>
+    </div>
+    <div id="proc-step-3" class="processing-step">
+      <div class="proc-icon">🧠</div>
+      <div class="proc-text"><div class="proc-title">AI Fraud Check</div><div class="proc-desc">Validating activity and authenticity...</div></div>
+    </div>
+    <div id="proc-step-4" class="processing-step">
+      <div class="proc-icon">💳</div>
+      <div class="proc-text"><div class="proc-title">Payment Processing</div><div class="proc-desc">Processing UPI payout...</div></div>
+    </div>
+    <div id="proc-step-5" class="processing-step" style="margin-bottom:0;">
+      <div class="proc-icon">✅</div>
+      <div class="proc-text"><div class="proc-title" id="proc-final-title">Payout Complete</div><div class="proc-desc" id="proc-final-desc">Amount credited successfully</div></div>
+    </div>
+
+    <div class="payout-btn-container" id="payoutBtnContainer">
+      <button class="btn btn-success btn-block" id="processPayoutBtn" style="background:var(--success);color:#fff;" onclick="completeClaimPayout()">Process UPI Payout — ₹450</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== LANDING ==================== -->
+<div class="page active" id="page-landing">
+  <div class="hero-mobile">
+    <h1>Smart <span>Insurance</span> for Delivery Workers</h1>
+    <p>AI-powered, location-based payouts — no claims required.</p>
+    <img src="hero_illustration.png" alt="Delivery rider">
+    <div class="hero-buttons">
+      <button class="btn btn-primary" onclick="navigate('auth')">🚀 Get Started</button>
+      <button class="btn btn-secondary" onclick="navigate('auth')">🗺️ View Risk Map</button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="hero-stat-value">50K+</div><div class="hero-stat-label">Protected</div></div>
+      <div><div class="hero-stat-value">₹2Cr+</div><div class="hero-stat-label">Payouts</div></div>
+      <div><div class="hero-stat-value">&lt;2hr</div><div class="hero-stat-label">Avg Time</div></div>
+    </div>
+  </div>
+  <div class="page-content">
+    <!-- Features -->
+    <div style="text-align:center;margin-bottom:16px;"><div class="section-badge">⚡ Features</div><h2 class="section-title">Why FluxShield?</h2></div>
+    <div class="feature-row">
+      <div class="card"><div class="card-icon accent">📡</div><h3>Live Detection</h3><p>GPS-based zone monitoring in real-time.</p></div>
+      <div class="card"><div class="card-icon success">⚡</div><h3>Instant Payout</h3><p>Auto UPI transfer in under 2 hours.</p></div>
+      <div class="card"><div class="card-icon warning">📅</div><h3>₹20/week</h3><p>Affordable weekly plans for gig workers.</p></div>
+      <div class="card"><div class="card-icon purple">🤖</div><h3>AI Validated</h3><p>Smart fraud checks before every payout.</p></div>
+    </div>
+    <!-- How it works -->
+    <div style="text-align:center;margin:24px 0 8px;"><div class="section-badge">🔄 Process</div><h2 class="section-title">How It Works</h2></div>
+    <div class="steps-row">
+      <div class="step-item"><div class="step-number">1</div><h3 style="font-size:0.85rem;">Detect</h3><p style="color:var(--text-secondary);font-size:0.7rem;">Live monitoring</p></div>
+      <div class="step-arrow">→</div>
+      <div class="step-item"><div class="step-number">2</div><h3 style="font-size:0.85rem;">Validate</h3><p style="color:var(--text-secondary);font-size:0.7rem;">AI checks</p></div>
+      <div class="step-arrow">→</div>
+      <div class="step-item"><div class="step-number">3</div><h3 style="font-size:0.85rem;">Payout</h3><p style="color:var(--text-secondary);font-size:0.7rem;">Instant UPI</p></div>
+    </div>
+    <!-- Testimonials -->
+    <div style="text-align:center;margin:24px 0 12px;"><div class="section-badge">💬 Stories</div><h2 class="section-title">Trusted by Riders</h2></div>
+    <div class="card testimonial-card"><p class="quote">"Got ₹150 during Mumbai monsoon without filing anything."</p><div class="author"><div class="avatar">R</div><div class="author-info"><div class="name">Rajan Kumar</div><div class="role">Zomato, Mumbai</div></div></div></div>
+    <div class="card testimonial-card"><p class="quote">"₹35/week is nothing for the peace of mind it gives."</p><div class="author"><div class="avatar">A</div><div class="author-info"><div class="name">Amit Sharma</div><div class="role">Blinkit, Bangalore</div></div></div></div>
+    <!-- CTA -->
+    <div style="text-align:center;padding:24px 0;"><h2 class="section-title">Ready?</h2><p class="section-subtitle" style="margin-bottom:16px;">Join 50,000+ protected riders.</p><button class="btn btn-primary" onclick="navigate('auth')">🛡️ Start Coverage</button></div>
+  </div>
+</div>
+
+<!-- ==================== AUTH ==================== -->
+<div class="page" id="page-auth">
+  <div class="auth-container">
+    <div class="auth-card">
+      <!-- Logo -->
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="width:56px;height:56px;border-radius:16px;background:var(--gradient-1);display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin:0 auto 10px;">⚡</div>
+        <h2 style="font-size:1.4rem;font-weight:800;">FluxShield</h2>
+        <p style="color:var(--text-secondary);font-size:0.82rem;margin-top:4px;">Smart Insurance for Delivery Workers</p>
+      </div>
+
+      <!-- Login Mode Tabs -->
+      <div class="login-tabs" id="loginTabs">
+        <button class="login-tab active" id="tabNormal" onclick="switchLoginTab('normal')">&#128274; Login</button>
+        <button class="login-tab" id="tabDemo" onclick="switchLoginTab('demo')">&#128640; Demo Login</button>
+      </div>
+
+      <!-- NORMAL LOGIN -->
+      <div id="normalLoginPanel">
+        <form onsubmit="handleNormalLogin(event)" autocomplete="off">
+          <div class="form-group">
+            <label>Email Address</label>
+            <div class="input-icon-wrap">
+              <span class="input-icon">📧</span>
+              <input type="email" class="form-input form-input-icon" id="normalEmail" placeholder="your@email.com" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <div class="input-icon-wrap">
+              <span class="input-icon">🔑</span>
+              <input type="password" class="form-input form-input-icon" id="normalPassword" placeholder="Enter password" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Your City</label>
+            <select class="form-input" id="normalCity">
+              <option>Bangalore</option><option>Mumbai</option><option>Delhi</option>
+              <option>Chennai</option><option>Hyderabad</option><option>Pune</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" style="padding:14px;margin-top:4px;">Sign In →</button>
+        </form>
+      </div>
+
+      <!-- DEMO LOGIN -->
+      <div id="demoLoginPanel" style="display:none;">
+        <div class="demo-hint-banner" style="margin-bottom:16px;">
+          <span>🎯</span>
+          <div><strong>Demo Mode</strong> — Loads from MockAPI with realistic data</div>
+        </div>
+        <form onsubmit="handleDemoAuthForm(event)" id="authForm" autocomplete="off">
+          <div class="form-group">
+            <label>Username</label>
+            <div class="input-icon-wrap">
+              <span class="input-icon">👤</span>
+              <input type="text" class="form-input form-input-icon" id="loginUsername" value="ravi" placeholder="Username" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <div class="input-icon-wrap">
+              <span class="input-icon">🔑</span>
+              <input type="password" class="form-input form-input-icon" id="loginPassword" value="1234" placeholder="Password" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Your City</label>
+            <select class="form-input" id="demoCity">
+              <option>Chennai</option><option>Delhi</option><option>Mumbai</option>
+              <option>Bangalore</option><option>Hyderabad</option><option>Pune</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" style="padding:14px;margin-top:4px;">Login as Ravi Kumar →</button>
+        </form>
+        <div class="auth-divider"><span>or</span></div>
+        <button class="btn demo-login-btn" onclick="handleDemoLogin()" style="margin-top:0;">
+          <span>🚀</span> Try Demo (One Click)
+        </button>
+      </div>
+
+      <p style="text-align:center;margin-top:16px;font-size:0.72rem;color:var(--text-muted);">🔒 256-bit encryption · IRDAI Regulated</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== BANK DETAILS ==================== -->
+<div class="page" id="page-bank">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header"><h2>Bank Details</h2><p>Where should we send your payouts?</p></div>
+      <form onsubmit="handleBankSetup(event)" id="bankForm">
+        <div class="form-group"><label>Account Holder Name</label><input type="text" class="form-input" placeholder="As per bank records" required id="bankName"></div>
+        <div class="form-group"><label>Account Number</label><input type="password" class="form-input" placeholder="Enter A/C Number" required id="bankAcc"></div>
+        <div class="form-group"><label>IFSC Code</label><input type="text" class="form-input" placeholder="e.g. HDFC0001234" required id="bankIfsc"></div>
+        <div class="form-group"><label>UPI ID (Optional)</label><input type="text" class="form-input" placeholder="name@bank" id="bankUpi"></div>
+        <button type="submit" class="btn btn-success btn-block" style="padding:14px;background:var(--success);color:#fff;margin-top:10px;">Verify & Continue →</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DASHBOARD ==================== -->
+<div class="page" id="page-dashboard">
+  <div class="page-content">
+    <div class="dash-greeting"><h2 id="dashGreeting">Hello! 👋</h2><p id="dashStatus">Select a plan to get started.</p><div class="dash-location" id="dashLocation">📍 Detecting location...</div></div>
+    
+    <!-- ML Explanation Card -->
+    <div class="ml-card" id="mlExplanationCard" style="display:none;">
+      <div class="ml-card-icon">🧠</div>
+      <div class="ml-card-content">
+        <h4>Smart Reward Engine</h4>
+        <p>Our AI model rewards consistent users with lower premiums based on risk stability and claim patterns.</p>
+      </div>
+    </div>
+    <!-- User Zone Risk -->
+    <div class="user-zone-card" id="userZoneCard">
+      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Your Area Risk</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div><div id="userZoneRisk" style="font-size:1.1rem;font-weight:800;color:var(--warning);">Moderate</div><div id="userZoneName" style="font-size:0.8rem;color:var(--text-secondary);">Koramangala</div></div>
+        <div id="userZoneIndicator" style="font-size:2rem;">🟡</div>
+      </div>
+      <div id="safeZoneHint" style="font-size:0.7rem;color:var(--success);margin-top:6px;">🟢 Safe zone 1.2km away: Whitefield</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-icon" style="background:var(--accent-glow);color:var(--accent-light);">💰</div><div><div class="stat-value" id="dashPremium">—</div><div class="stat-label">Premium</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:var(--success-bg);color:var(--success);">🛡️</div><div><div class="stat-value" id="dashCoverage">—</div><div class="stat-label">Coverage</div></div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-icon" style="background:var(--warning-bg);color:var(--warning);">📊</div><div><div class="stat-value" id="dashPayouts">₹0</div><div class="stat-label">Payouts</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:var(--purple-bg);color:var(--purple);">⚡</div><div><div class="stat-value" id="dashTriggers">0</div><div class="stat-label">Triggers</div></div></div>
+    </div>
+    <!-- Actuarial Sustainability Card — hidden from end users -->
+    <div class="card" style="display:none;margin-bottom:16px;border:1px solid var(--accent);">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h3 style="font-size:0.95rem;font-weight:700;">📊 System Sustainability (Actuarial)</h3>
+        <div id="bcrBadge" class="tier-badge" style="background:var(--success-bg);color:var(--success);">Healthy</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:4px;">
+        <span>Burning Cost Ratio (BCR)</span>
+        <span id="bcrVal" style="font-weight:700;">0.65</span>
+      </div>
+      <div class="progress-bar"><div id="bcrProgress" class="progress-fill" style="width:65%;background:var(--success);"></div></div>
+      <p style="font-size:0.7rem;color:var(--text-secondary);margin-top:8px;">Target: 0.55 – 0.70. (Model ensures affordability & sustainability)</p>
+    </div>
+    <!-- Tomorrow Risk Forecast -->
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:10px;">📅 Tomorrow Risk Forecast</h3>
+      <div style="background:var(--danger-bg);border:1px solid rgba(239, 68, 68, 0.2);border-radius:var(--radius);padding:12px;display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div style="font-size:1.8rem;">🌧️</div>
+        <div>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--danger);">High Rain Expected</div>
+          <div style="font-size:0.75rem;color:var(--text-secondary);">15 mm/hr peak at 4:00 PM</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px dashed var(--border);">
+        <div style="font-size:0.8rem;color:var(--text-secondary);">Expected Coverage Tomorrow</div>
+        <div style="font-size:0.9rem;font-weight:800;color:var(--success);">₹300–₹500</div>
+      </div>
+    </div>
+    <!-- Quick Actions -->
+    <div class="quick-grid">
+      <div class="quick-item" onclick="navigate('risk-map')"><div class="qi-icon">🗺️</div><div class="qi-label">Risk Map</div></div>
+      <div class="quick-item" onclick="navigate('pricing')"><div class="qi-icon">📋</div><div class="qi-label">My Plan</div></div>
+      <div class="quick-item" onclick="navigate('claims')"><div class="qi-icon">💳</div><div class="qi-label">Claims</div></div>
+      <div class="quick-item" onclick="openSelfClaimPicker()" style="border:1px solid rgba(99,102,241,0.4);"><div class="qi-icon" style="background:var(--accent-glow);">&#128190;</div><div class="qi-label" style="color:var(--accent-light);">Self Claim</div></div>
+      <div class="quick-item" id="stressTestBtn" onclick="runStressTest()" style="border:1px dashed var(--danger);"><div class="qi-icon">🔥</div><div class="qi-label" style="color:var(--danger);">Stress Test</div></div>
+    </div>
+
+    <!-- ===== LIVE RISK TRIGGERS ===== -->
+    <div class="triggers-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div>
+          <div class="section-badge" style="margin-bottom:4px;">⚠️ Live Triggers</div>
+          <h3 style="font-size:1rem;font-weight:800;">Active Risk Alerts</h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="api-status-dot" id="apiStatusDot"></div>
+          <span style="font-size:0.65rem;color:var(--text-muted);" id="apiStatusLabel">Connecting...</span>
+        </div>
+      </div>
+      <div id="triggerCards">
+        <!-- Populated by JS -->
+        <div class="trigger-skeleton"></div>
+        <div class="trigger-skeleton" style="animation-delay:0.15s"></div>
+        <div class="trigger-skeleton" style="animation-delay:0.3s"></div>
+      </div>
+    </div>
+
+    <!-- ===== EARNINGS ANALYTICS ===== -->
+    <div class="analytics-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div>
+          <div class="section-badge" style="margin-bottom:4px;">📊 Analytics · MockAPI</div>
+          <h3 style="font-size:1rem;font-weight:800;">Weekly Earnings vs Protection</h3>
+        </div>
+        <button class="btn-icon" onclick="refreshAnalyticsData()" title="Refresh data">🔄</button>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="analytics-summary" id="analyticsSummary">
+        <div class="ascard">
+          <div class="ascard-icon" style="background:rgba(99,102,241,0.15);color:#818cf8;">💰</div>
+          <div class="ascard-val" id="asTotalEarnings">₹0</div>
+          <div class="ascard-label">Total Earnings</div>
+        </div>
+        <div class="ascard">
+          <div class="ascard-icon" style="background:rgba(16,185,129,0.15);color:#10b981;">🛡️</div>
+          <div class="ascard-val" id="asTotalProtected">₹0</div>
+          <div class="ascard-label">Protected</div>
+        </div>
+        <div class="ascard">
+          <div class="ascard-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;">⏱️</div>
+          <div class="ascard-val" id="asTotalHours">0h</div>
+          <div class="ascard-label">Hours Covered</div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="chart-wrapper">
+        <canvas id="earningsChart" height="220"></canvas>
+      </div>
+
+      <!-- Legend -->
+      <div class="chart-legend">
+        <div class="cl-item"><span class="cl-dot" style="background:#6366f1;"></span>Earnings</div>
+        <div class="cl-item"><span class="cl-dot" style="background:#10b981;"></span>Protected</div>
+        <div class="cl-item"><span class="cl-dot" style="background:#f59e0b;border-radius:2px;"></span>Loss Avoided</div>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="alert-section"><h3>⚡ Live Alerts</h3><div id="dashAlerts">
+      <div class="alert-item info"><span class="alert-icon">ℹ️</span><div><div class="alert-text">Select a plan to start receiving alerts</div><div class="alert-time">Now</div></div></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ==================== RISK MAP ==================== -->
+<div class="page" id="page-risk-map">
+  <div class="page-content">
+    <h2 class="section-title" style="margin-bottom:4px;">🗺️ Live Risk Map</h2>
+    <p style="color:var(--text-secondary);font-size:0.8rem;margin-bottom:12px;">Zone-level monitoring · <span id="mapLocationLabel">Bangalore</span></p>
+    <div class="map-controls">
+      <div class="map-toggles">
+        <button class="map-toggle active" onclick="switchMapView(this,'current')">Live</button>
+        <button class="map-toggle" onclick="switchMapView(this,'forecast')">Forecast</button>
+        <button class="map-toggle" onclick="switchMapView(this,'historical')">History</button>
+      </div>
+      <select class="form-input" style="width:auto;padding:7px 10px;font-size:0.75rem;" id="riskTypeSelect" onchange="updateRiskType()">
+        <option value="rain">🌧️ Rain</option><option value="aqi">💨 AQI</option><option value="heat">🌡️ Heat</option>
+      </select>
+    </div>
+    <div class="map-wrapper"><div id="leafletMap" style="width:100%;height:100%;border-radius:inherit;"></div></div>
+    <div class="map-legend">
+      <div class="legend-item"><div class="legend-dot safe"></div>Safe</div>
+      <div class="legend-item"><div class="legend-dot moderate"></div>Moderate</div>
+      <div class="legend-item"><div class="legend-dot high"></div>High</div>
+      <div class="legend-item"><div class="legend-dot severe"></div>Severe</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--accent);"></div>You</div>
+    </div>
+    <div class="env-cards">
+      <div class="env-card"><div class="env-value" style="color:var(--warning);" id="aqiVal">—</div><div class="env-label">AQI</div></div>
+      <div class="env-card"><div class="env-value" style="color:var(--info);" id="rainVal">—</div><div class="env-label">Rain mm/hr</div></div>
+      <div class="env-card"><div class="env-value" style="color:var(--danger);" id="tempVal">—</div><div class="env-label">Temp</div></div>
+      <div class="env-card"><div class="env-value" style="color:var(--success);" id="floodVal">—</div><div class="env-label">Flood</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CLAIMS ==================== -->
+<div class="page" id="page-claims">
+  <div class="page-content">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div><div class="section-badge" style="margin-bottom:4px;">💳 Claims · MockAPI</div><h2 class="section-title" style="margin:0;">Your Claims</h2></div>
+      <button class="btn-icon" onclick="loadApiClaims()" title="Refresh">🔄</button>
+    </div>
+
+    <!-- Manual Claim CTA -->
+    <div class="manual-claim-card" onclick="openModal('manualClaimModal')">
+      <div style="font-size:2rem;margin-bottom:6px;">📝</div>
+      <h3>Raise Manual Claim</h3>
+      <p style="color:var(--text-secondary);font-size:0.8rem;">Report a disruption for AI validation</p>
+    </div>
+
+    <!-- API Claims Table -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h3 style="font-size:0.95rem;font-weight:700;">📋 Claims from API</h3>
+        <div class="api-status-dot" id="claimsApiDot" style="width:8px;height:8px;"></div>
+      </div>
+      <div id="apiClaimsTable" style="overflow-x:auto;">
+        <div class="claims-loading">
+          <div class="claims-skeleton"></div>
+          <div class="claims-skeleton" style="animation-delay:0.1s"></div>
+          <div class="claims-skeleton" style="animation-delay:0.2s"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Claim Flow -->
+    <h3 style="font-size:0.9rem;font-weight:700;margin-bottom:10px;">⚡ Auto Claim Flow</h3>
+    <div class="claim-flow">
+      <div class="claim-step"><div class="claim-step-icon" style="background:var(--info-bg);color:var(--info);">📡</div><div class="claim-step-content"><h4>1. Trigger</h4><p>API detects event in your zone</p></div></div>
+      <div class="claim-step"><div class="claim-step-icon" style="background:var(--purple-bg);color:var(--purple);">🤖</div><div class="claim-step-content"><h4>2. AI Validates</h4><p>Location + activity + policy check</p></div></div>
+      <div class="claim-step"><div class="claim-step-icon" style="background:var(--success-bg);color:var(--success);">💸</div><div class="claim-step-content"><h4>3. Payout</h4><p>Instant UPI transfer</p></div></div>
+    </div>
+
+    <!-- AI Log -->
+    <div class="card" style="margin-top:16px;"><h3 style="margin-bottom:8px;">🤖 AI Validation Log</h3><div id="aiValidationLog"><p style="text-align:center;color:var(--text-muted);padding:12px;font-size:0.8rem;">Events appear here when triggers fire.</p></div></div>
+    <!-- Payout History -->
+    <div class="card" style="margin-top:12px;"><h3 style="margin-bottom:8px;">💰 Payout History</h3><div id="payoutHistory" style="overflow-x:auto;"><table class="tier-table"><thead><tr><th>Date</th><th>Type</th><th>Zone</th><th>₹</th><th>Status</th></tr></thead><tbody id="payoutTableBody"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:16px;">No payouts yet</td></tr></tbody></table></div></div>
+  </div>
+</div>
+
+<!-- ==================== PRICING ==================== -->
+<div class="page" id="page-pricing">
+  <div class="page-content">
+    <div style="text-align:center;margin-bottom:16px;"><div class="section-badge">💳 Plans</div><h2 class="section-title">Choose Your Plan</h2><p class="section-subtitle">Select to activate coverage</p></div>
+    <div class="pricing-card" id="card-basic">
+      <div class="pricing-name">Basic Shield</div>
+      <div class="pricing-price" id="price-basic">₹35 <span>/week</span></div>
+      <div id="loyalty-basic"></div>
+      <div style="font-size:0.7rem;color:var(--text-muted);margin:8px 0;">Expected Loss: <span id="expLoss-basic">₹25</span></div>
+      <div class="pricing-desc">Rain coverage only</div>
+      <ul class="pricing-features">
+        <li><span class="pricing-check">✓</span>Rain trigger</li>
+        <li><span class="pricing-check">✓</span>Loading Factor: 1.4x</li>
+      </ul>
+      <button class="btn btn-secondary btn-block" id="planBtn-basic" onclick="selectPlan('basic')">Choose Plan</button>
+    </div>
+    <div class="pricing-card popular" id="card-pro">
+      <div class="pricing-name">Pro Guard</div>
+      <div class="pricing-price" id="price-pro">₹50 <span>/week</span></div>
+      <div id="loyalty-pro"></div>
+      <div style="font-size:0.7rem;color:var(--text-muted);margin:8px 0;">Expected Loss: <span id="expLoss-pro">₹36</span></div>
+      <div class="pricing-desc">Full protection for active riders</div>
+      <ul class="pricing-features">
+        <li><span class="pricing-check">✓</span>Rain + AQI + Heat</li>
+        <li><span class="pricing-check">✓</span>Loading Factor: 1.4x</li>
+      </ul>
+      <button class="btn btn-primary btn-block" id="planBtn-pro" onclick="selectPlan('pro')">Choose Plan</button>
+    </div>
+    <div class="pricing-card" id="card-max">
+      <div class="pricing-name">Max Protect</div>
+      <div class="pricing-price" id="price-max">₹65 <span>/week</span></div>
+      <div id="loyalty-max"></div>
+      <div style="font-size:0.7rem;color:var(--text-muted);margin:8px 0;">Expected Loss: <span id="expLoss-max">₹46</span></div>
+      <div class="pricing-desc">Maximum coverage + flood</div>
+      <ul class="pricing-features">
+        <li><span class="pricing-check">✓</span>All triggers + Flood</li>
+        <li><span class="pricing-check">✓</span>Loading Factor: 1.4x</li>
+      </ul>
+      <button class="btn btn-secondary btn-block" id="planBtn-max" onclick="selectPlan('max')">Choose Plan</button>
+    </div>
+    <!-- Calculator -->
+    <div class="formula-card">
+      <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:4px;">📐 Premium Calculator</h3>
+      <div class="formula-display"><span class="var">P(trigger)</span> × <span class="var">Loss</span> × <span class="var">Days</span> × <span class="var">Zone</span></div>
+      <div class="slider-group"><label>City Factor <span id="cityFactorVal">1.2x</span></label><input type="range" class="slider" min="0.8" max="2" step="0.1" value="1.2" oninput="updatePricing()"></div>
+      <div class="slider-group"><label>Trigger Prob <span id="trigProbVal">15%</span></label><input type="range" class="slider" min="5" max="50" step="1" value="15" oninput="updatePricing()"></div>
+      <div class="slider-group"><label>Daily Loss <span id="incomeLossVal">₹400</span></label><input type="range" class="slider" min="200" max="1000" step="50" value="400" oninput="updatePricing()"></div>
+      <div class="slider-group"><label>Days/Week <span id="daysVal">5</span></label><input type="range" class="slider" min="1" max="7" step="1" value="5" oninput="updatePricing()"></div>
+      <div style="text-align:center;padding:12px;background:var(--accent-glow);border-radius:var(--radius);margin-top:8px;"><div style="font-size:0.7rem;color:var(--text-muted);">Calculated Premium</div><div style="font-size:1.75rem;font-weight:800;color:var(--accent-light);" id="calcPremium">₹36</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PROFILE ==================== -->
+<div class="page" id="page-profile">
+  <div class="page-content">
+    <div class="profile-header">
+      <div class="profile-avatar" id="profileAvatar">?</div>
+      <div class="profile-name" id="profileName">Not logged in</div>
+      <div class="profile-email" id="profileEmail">—</div>
+    </div>
+
+    <!-- ===== TRUST SCORE SECTION ===== -->
+    <div class="trust-section" id="trustScoreSection">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div>
+          <div class="section-badge" style="margin-bottom:4px;">🛡️ Eligibility</div>
+          <h3 style="font-size:1rem;font-weight:800;">Eligibility &amp; Trust Score</h3>
+        </div>
+        <button class="btn-icon" onclick="refreshTrustScore()" title="Refresh score">🔄</button>
+      </div>
+
+      <!-- Circular Score -->
+      <div class="trust-score-ring-wrap">
+        <div class="trust-score-ring" id="trustScoreRing">
+          <svg viewBox="0 0 120 120" class="ring-svg">
+            <circle class="ring-bg" cx="60" cy="60" r="52"/>
+            <circle class="ring-fill" id="ringArc" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-score" id="ringScoreVal">—</div>
+            <div class="ring-label" id="ringScoreLabel">Calculating...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Score Badge -->
+      <div style="text-align:center;margin-bottom:16px;">
+        <div class="trust-badge" id="trustBadge">⏳ Loading...</div>
+      </div>
+
+      <!-- Score Breakdown -->
+      <div class="trust-breakdown">
+        <div class="tb-item">
+          <div class="tb-label"><span>📍 GPS Status</span><span class="tb-stat" id="tbGps">—</span></div>
+          <div class="tb-bar"><div class="tb-fill" id="tbGpsFill" style="width:0%"></div></div>
+        </div>
+        <div class="tb-item">
+          <div class="tb-label"><span>🏃 Activity Level</span><span class="tb-stat" id="tbActivity">—</span></div>
+          <div class="tb-bar"><div class="tb-fill" id="tbActivityFill" style="width:0%"></div></div>
+        </div>
+        <div class="tb-item">
+          <div class="tb-label"><span>✅ Claim Accuracy</span><span class="tb-stat" id="tbClaim">—</span></div>
+          <div class="tb-bar"><div class="tb-fill" id="tbClaimFill" style="width:0%"></div></div>
+        </div>
+        <div class="tb-item">
+          <div class="tb-label"><span>🔁 No Duplicates</span><span class="tb-stat" id="tbDuplicate">—</span></div>
+          <div class="tb-bar"><div class="tb-fill" id="tbDuplicateFill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- Benefits Banner -->
+      <div class="trust-benefit" id="trustBenefit"></div>
+    </div>
+
+    <!-- ===== MOCK DATA STATS ===== -->
+    <div class="mock-stats-section" id="mockStatsSection">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h3 style="font-size:0.95rem;font-weight:700;">📈 This Week's Activity</h3>
+        <button class="btn-icon" onclick="refreshMockStats()" title="Refresh">🔄</button>
+      </div>
+      <div class="mock-stat-grid">
+        <div class="msc">
+          <div class="msc-val" id="mscOrders">—</div>
+          <div class="msc-label">Orders</div>
+        </div>
+        <div class="msc">
+          <div class="msc-val" id="mscHours">—</div>
+          <div class="msc-label">Hours</div>
+        </div>
+        <div class="msc">
+          <div class="msc-val" id="mscEarnings">—</div>
+          <div class="msc-label">Earned</div>
+        </div>
+        <div class="msc">
+          <div class="msc-val" id="mscRating">—</div>
+          <div class="msc-label">Rating</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-menu">
+      <div class="pm-item" onclick="navigate('pricing')"><span class="pm-icon">📋</span><span class="pm-label">My Plan</span><span class="pm-arrow">›</span></div>
+      <div class="pm-item" onclick="navigate('claims')"><span class="pm-icon">💳</span><span class="pm-label">Claims History</span><span class="pm-arrow">›</span></div>
+      <div class="pm-item" onclick="navigate('risk-map')"><span class="pm-icon">🗺️</span><span class="pm-label">Risk Map</span><span class="pm-arrow">›</span></div>
+      <div class="pm-item" onclick="toggleTheme()"><span class="pm-icon">🌙</span><span class="pm-label">Dark/Light Mode</span><span class="pm-arrow">›</span></div>
+      <div class="pm-item" id="logoutBtn" style="display:none;" onclick="handleLogout()"><span class="pm-icon">🚪</span><span class="pm-label" style="color:var(--danger);">Logout</span><span class="pm-arrow">›</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SELF CLAIM PICKER ==================== -->
+<div class="claim-pipeline-overlay" id="selfClaimPickerOverlay" onclick="closeSelfClaimPicker(event)">
+  <div class="claim-pipeline-modal" style="border-radius:24px 24px 0 0;padding:0;">
+    <div class="cp-header">
+      <div class="cp-header-left">
+        <div class="cp-icon">📝</div>
+        <div>
+          <div class="cp-title">Self Claim</div>
+          <div class="cp-subtitle">Select the disruption type to file</div>
+        </div>
+      </div>
+      <button class="cp-close" onclick="document.getElementById('selfClaimPickerOverlay').classList.remove('active')">&#10005;</button>
+    </div>
+    <div style="padding:20px;">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+        <button class="scp-type" onclick="pickAndClaim('rain','High Rain Risk in your zone','&#127783;&#65039;')">
+          <div class="scp-icon">🌧️</div><div class="scp-label">Rain</div>
+        </button>
+        <button class="scp-type" onclick="pickAndClaim('heat','Extreme Heat Conditions','&#128293;')">
+          <div class="scp-icon">🔥</div><div class="scp-label">Heat</div>
+        </button>
+        <button class="scp-type" onclick="pickAndClaim('aqi','Unhealthy Air Quality','&#127787;&#65039;')">
+          <div class="scp-icon">🌫️</div><div class="scp-label">AQI</div>
+        </button>
+        <button class="scp-type" onclick="pickAndClaim('flood','Flood Risk Alert','&#127754;')">
+          <div class="scp-icon">🌊</div><div class="scp-label">Flood</div>
+        </button>
+        <button class="scp-type" onclick="pickAndClaim('storm','Severe Storm Detected','&#9928;')">
+          <div class="scp-icon">⚡</div><div class="scp-label">Storm</div>
+        </button>
+        <button class="scp-type" onclick="pickAndClaim('traffic','Road Blockage Reported','&#128747;')">
+          <div class="scp-icon">🚧</div><div class="scp-label">Traffic</div>
+        </button>
+      </div>
+      <p style="font-size:0.7rem;color:var(--text-muted);text-align:center;">Your claim will go through AI fraud detection before payout</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CLAIM PIPELINE MODAL ==================== -->
+<div class="claim-pipeline-overlay" id="claimPipelineOverlay" onclick="closePipeline(event)">
+  <div class="claim-pipeline-modal" id="claimPipelineModal">
+    <!-- Header -->
+    <div class="cp-header">
+      <div class="cp-header-left">
+        <div class="cp-icon" id="cpHeaderIcon">📡</div>
+        <div>
+          <div class="cp-title" id="cpTriggerName">Processing Claim...</div>
+          <div class="cp-subtitle" id="cpTriggerDesc">IMD Alert detected in your zone</div>
+        </div>
+      </div>
+      <button class="cp-close" onclick="closePipelineModal()">&#10005;</button>
+    </div>
+
+    <!-- Step Pipeline -->
+    <div class="cp-steps" id="cpSteps">
+
+      <!-- Step 1 -->
+      <div class="cp-step" id="cpStep1">
+        <div class="cp-step-indicator">
+          <div class="cp-step-dot" id="cpDot1"></div>
+          <div class="cp-step-line" id="cpLine1"></div>
+        </div>
+        <div class="cp-step-body">
+          <div class="cp-step-title">Trigger Detected</div>
+          <div class="cp-step-detail" id="cpDetail1">Scanning IMD alerts for your zone...</div>
+          <div class="cp-step-status" id="cpStatus1"></div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="cp-step" id="cpStep2">
+        <div class="cp-step-indicator">
+          <div class="cp-step-dot" id="cpDot2"></div>
+          <div class="cp-step-line" id="cpLine2"></div>
+        </div>
+        <div class="cp-step-body">
+          <div class="cp-step-title">Policy Verified</div>
+          <div class="cp-step-detail" id="cpDetail2">Checking active plan and zone eligibility...</div>
+          <div class="cp-step-status" id="cpStatus2"></div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="cp-step" id="cpStep3">
+        <div class="cp-step-indicator">
+          <div class="cp-step-dot" id="cpDot3"></div>
+          <div class="cp-step-line" id="cpLine3"></div>
+        </div>
+        <div class="cp-step-body">
+          <div class="cp-step-title">Fraud Check</div>
+          <div class="cp-step-detail" id="cpDetail3">Running multi-layer verification...</div>
+          <div class="cp-fraud-checks" id="cpFraudChecks" style="display:none;">
+            <div class="cp-check" id="cpCheckGPS">
+              <span class="cp-check-icon" id="cpCheckGPSIcon">⏳</span>
+              <span>GPS Spoofing</span>
+              <span class="cp-check-val" id="cpCheckGPSVal">Scanning...</span>
+            </div>
+            <div class="cp-check" id="cpCheckCell">
+              <span class="cp-check-icon" id="cpCheckCellIcon">⏳</span>
+              <span>Cell Tower Match</span>
+              <span class="cp-check-val" id="cpCheckCellVal">Scanning...</span>
+            </div>
+            <div class="cp-check" id="cpCheckPlatform">
+              <span class="cp-check-icon" id="cpCheckPlatformIcon">⏳</span>
+              <span>Platform Login</span>
+              <span class="cp-check-val" id="cpCheckPlatformVal">Scanning...</span>
+            </div>
+            <div class="cp-fraud-score-row">
+              <span>Fraud Score</span>
+              <span class="cp-fraud-score-val" id="cpFraudScoreVal">—</span>
+            </div>
+          </div>
+          <div class="cp-step-status" id="cpStatus3"></div>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="cp-step" id="cpStep4">
+        <div class="cp-step-indicator">
+          <div class="cp-step-dot" id="cpDot4"></div>
+        </div>
+        <div class="cp-step-body">
+          <div class="cp-step-title">Final Result</div>
+          <div class="cp-step-detail" id="cpDetail4">Awaiting verification...</div>
+          <!-- Success Result -->
+          <div class="cp-result cp-result-success" id="cpResultSuccess" style="display:none;">
+            <div class="cp-result-icon">🎉</div>
+            <div class="cp-result-title">Payout Ready!</div>
+            <div class="cp-payout-amount" id="cpPayoutAmount">₹0</div>
+            <div class="cp-result-sub">Credited to your UPI within 2 hours</div>
+            <button class="btn btn-primary" style="margin-top:16px;padding:12px 28px;" onclick="processUPIPayout()">💸 Process UPI Payout</button>
+          </div>
+          <!-- Failure Result -->
+          <div class="cp-result cp-result-fail" id="cpResultFail" style="display:none;">
+            <div class="cp-result-icon">❌</div>
+            <div class="cp-result-title">Claim Rejected</div>
+            <div class="cp-result-sub" id="cpRejectReason">Suspicious activity detected</div>
+            <button class="btn" style="margin-top:16px;padding:12px 28px;background:var(--surface);color:var(--text-primary);" onclick="closePipelineModal()">Close</button>
+          </div>
+          <div class="cp-step-status" id="cpStatus4"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="mockapi.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
