@@ -1,6 +1,6 @@
 // realApi.js - Interacts with the Python FastAPI Backend
 import { CONFIG } from './cityData';
-const BASE_URL = 'http://localhost:8000/api';
+const BASE_URL = 'https://fluxshield.onrender.com/';
 
 export async function fetchRealWeather(lat, lng) {
   try {
